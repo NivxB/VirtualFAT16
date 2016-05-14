@@ -16,11 +16,11 @@ public class DirectoryEntry {
     private String fileName;
     private byte fileType;
     private long createdOn;
-    private int clusterHead;
+    private char clusterHead;
     private int fileSize;
     private long currentFilePosition;
 
-    public DirectoryEntry(String fileName, byte fileType, long createdOn, int clusterHead, int fileSize) {
+    public DirectoryEntry(String fileName, byte fileType, long createdOn, char clusterHead, int fileSize) {
         this.fileName = fileName;
         this.fileType = fileType;
         this.createdOn = createdOn;
@@ -30,7 +30,7 @@ public class DirectoryEntry {
         this.deleted = 0x1;
     }
     
-    public DirectoryEntry(String fileName, byte fileType, long createdOn, int clusterHead, int fileSize, byte deleted) {
+    public DirectoryEntry(String fileName, byte fileType, long createdOn, char clusterHead, int fileSize, byte deleted) {
         this.fileName = fileName;
         this.fileType = fileType;
         this.createdOn = createdOn;
@@ -48,11 +48,11 @@ public class DirectoryEntry {
         this.fileSize =  fileSize;
     }
 
-    public int getClusterHead() {
+    public char getClusterHead() {
         return clusterHead;
     }
 
-    public void setClusterHead(int clusterHead) {
+    public void setClusterHead(char clusterHead) {
         this.clusterHead = clusterHead;
     }
 

@@ -60,7 +60,7 @@ public class FileSystem {
         return -1;
     }
 
-    public int findFreeCluster() throws IOException {
+    public char findFreeCluster() throws IOException {
         root.seek(FAT_REGION_START);
         for (int i = 0; i < FAT_ENTRY_MAX_AMOUNT; i++) {
             byte[] onFAT = new byte[FAT_ENTRY_SIZE];
@@ -80,13 +80,13 @@ public class FileSystem {
                 root.seek(COPY_FAT_REGION_START + (i * FAT_ENTRY_SIZE));
                 //reservamos copy fat
                 root.write(EOF);
-                return i;
+                return (char)i;
             }
         }
-        return -1;
+        return (char)-1;
     }
 
-    public int findFreeCluster(int previousCluster) throws IOException {
+    public char findFreeCluster(int previousCluster) throws IOException {
         root.seek(FAT_REGION_START);
         for (int i = 0; i < FAT_ENTRY_MAX_AMOUNT; i++) {
             byte[] onFAT = new byte[FAT_ENTRY_SIZE];
@@ -101,21 +101,21 @@ public class FileSystem {
             if (positionCheck == 0) {
                 root.seek(root.getFilePointer() - FAT_ENTRY_SIZE);
                 //retornamos los 2 bytes
-                root.write(EOF);
+                root.writeChar(EOF);
                 //vamos a enlazar chaval
                 // para que la fat anterior apunte a la siguiente fat
                 root.seek(FAT_REGION_START +(previousCluster * FAT_ENTRY_SIZE));
-                root.write(i);
+                root.write(decodedPosition.charAt(0));
                 //reservamos en primera FAT
                 root.seek(COPY_FAT_REGION_START + (i * FAT_ENTRY_SIZE));
                 //reservamos copy fat
-                root.write(EOF);
+                root.writeChar(EOF);
                 root.seek(COPY_FAT_REGION_START +(previousCluster * FAT_ENTRY_SIZE));
-                root.write(i);
-                return i;
+                root.write(decodedPosition.charAt(0));
+                return (char)i;
             }
         }
-        return -1;
+        return (char)-1;
     }
 
     public int findFreeEntryOnCluster(int cluster) throws IOException{
@@ -131,4 +131,19 @@ public class FileSystem {
         }
         return -1;
     }
+    
+    public char getNextClusterPosition(int cluster) throws IOException{
+        root.seek(FAT_REGION_START + (cluster * CLUSTER_SIZE));
+        byte[] nextPosition = new byte[2];
+        root.read(nextPosition);
+        String decodedPosition = new String(nextPosition);
+        int nextCluster = (int)decodedPosition.charAt(0);
+        if (nextCluster == EOF){
+            //??????
+            return EOF;
+        }
+        return decodedPosition.charAt(0);
+    }
+    
+    
 }
