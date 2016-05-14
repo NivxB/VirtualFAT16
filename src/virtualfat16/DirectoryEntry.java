@@ -7,7 +7,7 @@ package virtualfat16;
 
 /**
  *
- * @author kbarahona
+ * @author kbarahona,elco45
  */
 public class DirectoryEntry {
     public static final byte DIRECTORY = 0x0010;
