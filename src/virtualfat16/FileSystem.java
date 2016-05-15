@@ -14,6 +14,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -177,6 +179,44 @@ public class FileSystem {
         return listEntry;
     }
     
+    public List<DirectoryEntry> readDirEntry2(char cluster)throws IOException{
+        List<DirectoryEntry> listEntry=new LinkedList<DirectoryEntry>();
+        int initialPosition = DATA_REGION_START + (((int)cluster) * CLUSTER_SIZE);
+        root.seek(initialPosition);
+        byte[] readData = new byte[32];
+        byte[] fecha = new byte[8];
+        byte[] clusterHead = new byte[2];
+        byte[] fileSize = new byte[4];
+        int cont=0;
+        for (int i = 0; i < DIR_ENTRY_MAX_FILES; i++) {
+            int check=root.read(readData);
+            if (check!=0) {
+                try{
+                    cont=0;
+                    for (int j = 12; j <= 19; j++) {
+                        fecha[cont]=readData[j];
+                        cont++;
+                    }
+                    clusterHead[0]=readData[20];
+                    clusterHead[1]=readData[21];
+                    cont=0;
+                    for (int k = 22; k <= 25; k++) {
+                        fileSize[cont]=readData[k];
+                        cont++;
+                    }
+                    DirectoryEntry dirEntry = new DirectoryEntry(new String(readData, 1, 10),readData[11],byteToLong(fecha),byteToChar(clusterHead),byteToInt(fileSize));
+                    listEntry.add(dirEntry);
+                }catch(Exception ex){
+                    System.out.println(ex); 
+                }
+                root.seek(initialPosition + ((i + 1) * DIR_ENTRY_SIZE));
+            } else {
+                break;
+            }
+        }
+        return listEntry;
+    }
+    
     public DirectoryEntry compareFileName(List<DirectoryEntry> listEntry,String filename)throws IOException {
         for (int i = 0; i < listEntry.size(); i++) {
             if (listEntry.get(i).getFileName().equals(filename)) {
@@ -258,5 +298,17 @@ public class FileSystem {
             root.write(dirEntry.getByteRepresentation());
         }
         return true;
+    }
+    
+     public int byteToInt(byte[] byteBarray) {
+        return ByteBuffer.wrap(byteBarray).order(ByteOrder.BIG_ENDIAN).getInt();
+    }
+
+    public long byteToLong(byte[] byteBarray) {
+        return ByteBuffer.wrap(byteBarray).order(ByteOrder.BIG_ENDIAN).getLong();
+    }
+
+    public char byteToChar(byte[] byteBarray) {
+        return ByteBuffer.wrap(byteBarray).order(ByteOrder.BIG_ENDIAN).getChar();
     }
 }
