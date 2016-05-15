@@ -71,27 +71,79 @@ public class VirtualFAT16 {
     }
 
     public static void mkdir(String[] command) {
-        //command[1]=>filename
-        //llamar a una funcion del filesystem
+        if (command.length==2) {
+            //crear pinche archivo/directorio
+        }else{
+            System.out.println("Valor invalido!");
+        }
     }
 
     public static void cd(String[] command) {
-        
+        if (command.length==2) {
+            //si es un directorio entonces
+                //si existe ese archivo en el directorio actual entonces
+
+                //si no, entonces tirar error
+            
+            //si no es un directorio tirar error
+        }else{
+            System.out.println("Valor invalido!");
+        }
     }
 
     public static void rmdir(String[] command) {
+        if (command.length==2) {
+            //si es un directorio entonces
+                //si existe ese archivo en el directorio actual entonces
 
+                //si no, entonces tirar error
+            
+            //si no es un directorio tirar error
+        }else{
+            System.out.println("Valor invalido!");
+        }
     }
 
     public static void rm(String[] command) {
-
+        if (command.length==2) {
+            //si existe ese archivo en el directorio actual entonces
+                
+            //si no, entonces tirar error
+        }else{
+            System.out.println("Valor invalido!");
+        }
     }
 
     public static void cat(String[] command) {
-
+        if (command[1].equals(">")) {
+            if (command.length==3) {//cat >
+                //si existe ese archivo en el directorio actual entonces
+                
+                //si no, hay que crearlo primero
+            }else{
+                System.out.println("Falta el nombre del archivo!");
+            }
+        }else{
+            if (command.length==2) {//cat normal
+                //si existe ese archivo en el directorio actual entonces
+                
+                //si no, entonces tirar error
+            }else{
+                System.out.println("Falta el nombre del archivo!");
+            }
+        }
     }
 
     public static void ls(String[] command) {
-
+        if (command.length==2) {
+            if (command[1].equals("-l")) {
+            
+            }else{
+                System.out.println("Pruebe ls -l");
+            }
+        }else{
+            System.out.println("Valor invalido!");
+        }
+        
     }
 }
