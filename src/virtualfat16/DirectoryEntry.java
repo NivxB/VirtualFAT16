@@ -21,7 +21,7 @@ public class DirectoryEntry {
     private String fileName;
     private byte fileType;
     private long createdOn;
-    private char clusterHead;
+    private char clusterHead=0xFFFF;
     private int fileSize;
     private long currentFilePosition;
 
