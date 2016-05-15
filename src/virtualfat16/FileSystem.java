@@ -14,6 +14,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.RandomAccessFile;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  *
@@ -151,7 +153,8 @@ public class FileSystem {
         return decodedPosition.charAt(0);
     }
 
-    public void ReadDirEntry(int cluster,char clusterhead) throws IOException {
+    public List<DirectoryEntry> ReadDirEntry(int cluster) throws IOException {
+        List<DirectoryEntry> listEntry=new LinkedList<DirectoryEntry>();
         int initialPosition = DATA_REGION_START + (cluster * CLUSTER_SIZE);
         root.seek(initialPosition);
         byte[] readData = new byte[32];
@@ -160,9 +163,7 @@ public class FileSystem {
             if (check!=0) {
                 try{
                     DirectoryEntry dirEntry = (DirectoryEntry)(convertFromBytes(readData));
-                    if (dirEntry.getClusterHead()== clusterhead) {
-                        System.out.println("Yay?!");
-                    }
+                    listEntry.add(dirEntry);
                 }catch(Exception ex){
                     System.out.println(ex); 
                 }
@@ -171,6 +172,16 @@ public class FileSystem {
                 break;
             }
         }
+        return listEntry;
+    }
+    
+    public DirectoryEntry CompareFileName(List<DirectoryEntry> listEntry,String filename)throws IOException {
+        for (int i = 0; i < listEntry.size(); i++) {
+            if (listEntry.get(i).getFileName().equals(filename)) {
+                return listEntry.get(i);
+            }
+        }
+        return null;
     }
 
     private byte[] convertToBytes(Object object) throws IOException {
