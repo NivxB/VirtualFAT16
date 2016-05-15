@@ -5,8 +5,14 @@
  */
 package virtualfat16;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.RandomAccessFile;
 
 /**
@@ -23,11 +29,11 @@ public class FileSystem {
     public static final int DIR_ENTRY_SIZE = 32;//bytes
     public static final int FAT_ENTRY_SIZE = 2;//bytes
 
-    public static final int FAT_TABLE_SIZE = 128 * 1024;//bytes
+    public static final int FAT_TABLE_SIZE = 128 * 1024;//bytes - 128KB
     public static final int CLUSTER_SIZE = 4 * 1024;//bytes - 4KB
-    public static final int ROOT_SIZE = 16 * 1024;//bytes
+    public static final int ROOT_SIZE = 16 * 1024;//bytes - 16KB
 
-    public static final int DIR_ENTRY_MAX_FILES = CLUSTER_SIZE / DIR_ENTRY_SIZE; // (4*1024)/32
+    public static final int DIR_ENTRY_MAX_FILES = CLUSTER_SIZE / DIR_ENTRY_SIZE; // (4*1024)/32 = 128
     public static final int ROOT_ENTRY_MAX_FILES = ROOT_SIZE / DIR_ENTRY_SIZE;
 
     public static final int ROOT_REGION_START = 0; //comienza en el byte 0
@@ -45,6 +51,7 @@ public class FileSystem {
             root.seek((FILE_SYSTEM_SIZE) - 1);
             root.write(1);
         }
+        ReadDirEntry(0);
     }
 
     public int findFreeEntryRoot() throws IOException {
@@ -80,10 +87,10 @@ public class FileSystem {
                 root.seek(COPY_FAT_REGION_START + (i * FAT_ENTRY_SIZE));
                 //reservamos copy fat
                 root.write(EOF);
-                return (char)i;
+                return (char) i;
             }
         }
-        return (char)-1;
+        return (char) -1;
     }
 
     public char findFreeCluster(int previousCluster) throws IOException {
@@ -104,46 +111,82 @@ public class FileSystem {
                 root.writeChar(EOF);
                 //vamos a enlazar chaval
                 // para que la fat anterior apunte a la siguiente fat
-                root.seek(FAT_REGION_START +(previousCluster * FAT_ENTRY_SIZE));
+                root.seek(FAT_REGION_START + (previousCluster * FAT_ENTRY_SIZE));
                 root.write(decodedPosition.charAt(0));
                 //reservamos en primera FAT
                 root.seek(COPY_FAT_REGION_START + (i * FAT_ENTRY_SIZE));
                 //reservamos copy fat
                 root.writeChar(EOF);
-                root.seek(COPY_FAT_REGION_START +(previousCluster * FAT_ENTRY_SIZE));
+                root.seek(COPY_FAT_REGION_START + (previousCluster * FAT_ENTRY_SIZE));
                 root.write(decodedPosition.charAt(0));
-                return (char)i;
+                return (char) i;
             }
         }
-        return (char)-1;
+        return (char) -1;
     }
 
-    public int findFreeEntryOnCluster(int cluster) throws IOException{
+    public int findFreeEntryOnCluster(int cluster) throws IOException {
         int initialPosition = DATA_REGION_START + (cluster * CLUSTER_SIZE);
         root.seek(initialPosition);
-        for (int i = 0 ; i < DIR_ENTRY_MAX_FILES ; i++){
+        for (int i = 0; i < DIR_ENTRY_MAX_FILES; i++) {
             int check = root.read();
-            if (check == 0){
+            if (check == 0) {
                 return i;
-            }else{
-                root.seek(initialPosition + ((i+1) * DIR_ENTRY_SIZE));
+            } else {
+                root.seek(initialPosition + ((i + 1) * DIR_ENTRY_SIZE));
             }
         }
         return -1;
     }
-    
-    public char getNextClusterPosition(int cluster) throws IOException{
+
+    public char getNextClusterPosition(int cluster) throws IOException {
         root.seek(FAT_REGION_START + (cluster * CLUSTER_SIZE));
         byte[] nextPosition = new byte[2];
         root.read(nextPosition);
         String decodedPosition = new String(nextPosition);
-        int nextCluster = (int)decodedPosition.charAt(0);
-        if (nextCluster == EOF){
+        int nextCluster = (int) decodedPosition.charAt(0);
+        if (nextCluster == EOF) {
             //??????
             return EOF;
         }
         return decodedPosition.charAt(0);
     }
-    
-    
+
+    public void ReadDirEntry(int cluster,char clusterhead) throws IOException {
+        int initialPosition = DATA_REGION_START + (cluster * CLUSTER_SIZE);
+        root.seek(initialPosition);
+        byte[] readData = new byte[32];
+        for (int i = 0; i < DIR_ENTRY_MAX_FILES; i++) {
+            int check=root.read(readData);
+            if (check!=0) {
+                try{
+                    DirectoryEntry dirEntry = (DirectoryEntry)(convertFromBytes(readData));
+                    if (dirEntry.getClusterHead()== clusterhead) {
+                        System.out.println("Yay?!");
+                    }
+                }catch(Exception ex){
+                    System.out.println(ex); 
+                }
+                root.seek(initialPosition + ((i + 1) * DIR_ENTRY_SIZE));
+            }else{
+                break;
+            }
+        }
+    }
+
+    private byte[] convertToBytes(Object object) throws IOException {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutput out = new ObjectOutputStream(bos)) {
+            out.writeObject(object);
+            return bos.toByteArray();
+        }
+    }
+
+    private Object convertFromBytes(byte[] bytes) throws IOException, ClassNotFoundException {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+            ObjectInput in = new ObjectInputStream(bis)) {
+            return in.readObject();
+        }
+    }
+
 }
