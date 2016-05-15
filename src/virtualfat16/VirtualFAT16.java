@@ -6,6 +6,7 @@
 package virtualfat16;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,18 +21,20 @@ public class VirtualFAT16 {
      * @param args the command line arguments
      */
     static final String[] commands = {"mkdir", "cd", "rmdir", "rm", "cat", "ls", "exit"};
+    static String actualDir = "~/";
+    static FileSystem FS;
 
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         String command = "";
-        String[] comando={};
+        String[] comando = {};
         int num_command = 0;
         try {
-            FileSystem FS = new FileSystem();
+            FS = new FileSystem();
             while (true) {
                 System.out.print("mi_sh>>");
                 command = sc.nextLine();
-                comando=splitter(command);
+                comando = splitter(command);
                 num_command = verifyCommands(comando);
                 if (num_command == -1) {//error
                     System.out.println("Comando invalido!");
@@ -71,79 +74,102 @@ public class VirtualFAT16 {
     }
 
     public static void mkdir(String[] command) {
-        if (command.length==2) {
-            //crear pinche archivo/directorio
-        }else{
+        if (command.length == 2) {
+            if (actualDir.equals("~/")) {
+                String[] filename=command[1].split("\\.");
+                if (filename.length==1) {//directorio
+                    try{
+                        DirectoryEntry dirEntry=new DirectoryEntry(command[1],(byte)0x0010,new java.util.Date().getTime(),FS.findFreeCluster(),0);
+                        FS.writeDirEntry(dirEntry,dirEntry.getClusterHead(),true);
+                        List<DirectoryEntry> lista=FS.readDirEntry2(dirEntry.getClusterHead());
+                        for (int i = 0; i < lista.size(); i++) {
+                            System.out.println(lista.get(i).getFileName());
+                        }
+                    }catch(Exception ex){
+                        
+                    }
+                }else if (filename.length==2) {//archivo
+                    try{
+                        DirectoryEntry dirEntry=new DirectoryEntry(command[1],(byte)0x0020,new java.util.Date().getTime(),FS.findFreeCluster(),0);
+                        FS.writeDirEntry(dirEntry,dirEntry.getClusterHead(),false);
+                    }catch(Exception ex){
+                        
+                    }
+                }else{
+                    System.out.println("Error!");
+                }
+            } else {
+
+            }
+        } else {
             System.out.println("Valor invalido!");
         }
     }
 
     public static void cd(String[] command) {
-        if (command.length==2) {
+        if (command.length == 2) {
             //si es un directorio entonces
-                //si existe ese archivo en el directorio actual entonces
+            //si existe ese archivo en el directorio actual entonces
 
                 //si no, entonces tirar error
-            
             //si no es un directorio tirar error
-        }else{
+        } else {
             System.out.println("Valor invalido!");
         }
     }
 
     public static void rmdir(String[] command) {
-        if (command.length==2) {
+        if (command.length == 2) {
             //si es un directorio entonces
-                //si existe ese archivo en el directorio actual entonces
+            //si existe ese archivo en el directorio actual entonces
 
                 //si no, entonces tirar error
-            
             //si no es un directorio tirar error
-        }else{
+        } else {
             System.out.println("Valor invalido!");
         }
     }
 
     public static void rm(String[] command) {
-        if (command.length==2) {
+        if (command.length == 2) {
             //si existe ese archivo en el directorio actual entonces
-                
+
             //si no, entonces tirar error
-        }else{
+        } else {
             System.out.println("Valor invalido!");
         }
     }
 
     public static void cat(String[] command) {
         if (command[1].equals(">")) {
-            if (command.length==3) {//cat >
+            if (command.length == 3) {//cat >
                 //si existe ese archivo en el directorio actual entonces
-                
+
                 //si no, hay que crearlo primero
-            }else{
+            } else {
                 System.out.println("Falta el nombre del archivo!");
             }
-        }else{
-            if (command.length==2) {//cat normal
+        } else {
+            if (command.length == 2) {//cat normal
                 //si existe ese archivo en el directorio actual entonces
-                
+
                 //si no, entonces tirar error
-            }else{
+            } else {
                 System.out.println("Falta el nombre del archivo!");
             }
         }
     }
 
     public static void ls(String[] command) {
-        if (command.length==2) {
+        if (command.length == 2) {
             if (command[1].equals("-l")) {
-            
-            }else{
+                
+            } else {
                 System.out.println("Pruebe ls -l");
             }
-        }else{
+        } else {
             System.out.println("Valor invalido!");
         }
-        
+
     }
 }

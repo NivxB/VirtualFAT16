@@ -205,6 +205,7 @@ public class FileSystem {
                         cont++;
                     }
                     DirectoryEntry dirEntry = new DirectoryEntry(new String(readData, 1, 10),readData[11],byteToLong(fecha),byteToChar(clusterHead),byteToInt(fileSize));
+                    dirEntry.setCurrentFilePosition(initialPosition+(i*DIR_ENTRY_SIZE));
                     listEntry.add(dirEntry);
                 }catch(Exception ex){
                     System.out.println(ex); 
