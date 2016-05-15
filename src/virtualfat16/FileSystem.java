@@ -90,6 +90,7 @@ public class FileSystem {
                 root.seek(COPY_FAT_REGION_START + (i * FAT_ENTRY_SIZE));
                 //reservamos copy fat
                 root.write(EOF);
+                System.out.println(i);
                 return (char) i;
             }
         }
@@ -156,30 +157,6 @@ public class FileSystem {
     }
 
     public List<DirectoryEntry> readDirEntry(char cluster) throws IOException {
-        List<DirectoryEntry> listEntry = new LinkedList<DirectoryEntry>();
-        int initialPosition = DATA_REGION_START + (((int) cluster) * CLUSTER_SIZE);
-        root.seek(initialPosition);
-        byte[] readData = new byte[32];
-        for (int i = 0; i < DIR_ENTRY_MAX_FILES; i++) {
-            root.read(readData);
-            String decodedPosition = new String(readData);
-            int positionCheck = (int) decodedPosition.charAt(0);
-            if (positionCheck != 0) {
-                try {
-                    DirectoryEntry dirEntry = (DirectoryEntry) (convertFromBytes(readData));
-                    listEntry.add(dirEntry);
-                } catch (Exception ex) {
-                    System.out.println(ex);
-                }
-                root.seek(initialPosition + ((i + 1) * DIR_ENTRY_SIZE));
-            } else {
-                break;
-            }
-        }
-        return listEntry;
-    }
-
-    public List<DirectoryEntry> readDirEntry2(char cluster) throws IOException {
         List<DirectoryEntry> listEntry = new LinkedList<DirectoryEntry>();
         int initialPosition = DATA_REGION_START + (((int) cluster) * CLUSTER_SIZE);
         root.seek(initialPosition);
@@ -266,13 +243,6 @@ public class FileSystem {
             }
         }
         return null;
-    }
-
-    private Object convertFromBytes(byte[] bytes) throws IOException, ClassNotFoundException {
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-                ObjectInput in = new ObjectInputStream(bis)) {
-            return in.readObject();
-        }
     }
 
     public String getData(DirectoryEntry dirEntry) throws IOException {
