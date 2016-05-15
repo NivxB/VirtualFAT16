@@ -155,21 +155,21 @@ public class FileSystem {
         return decodedPosition.charAt(0);
     }
 
-
     public List<DirectoryEntry> readDirEntry(char cluster) throws IOException {
-        List<DirectoryEntry> listEntry=new LinkedList<DirectoryEntry>();
-        int initialPosition = DATA_REGION_START + (((int)cluster) * CLUSTER_SIZE);
+        List<DirectoryEntry> listEntry = new LinkedList<DirectoryEntry>();
+        int initialPosition = DATA_REGION_START + (((int) cluster) * CLUSTER_SIZE);
         root.seek(initialPosition);
         byte[] readData = new byte[32];
         for (int i = 0; i < DIR_ENTRY_MAX_FILES; i++) {
-
-            int check=root.read(readData);
-            if (check!=0) {
-                try{
-                    DirectoryEntry dirEntry = (DirectoryEntry)(convertFromBytes(readData));
+            root.read(readData);
+            String decodedPosition = new String(readData);
+            int positionCheck = (int) decodedPosition.charAt(0);
+            if (positionCheck != 0) {
+                try {
+                    DirectoryEntry dirEntry = (DirectoryEntry) (convertFromBytes(readData));
                     listEntry.add(dirEntry);
-                }catch(Exception ex){
-                    System.out.println(ex); 
+                } catch (Exception ex) {
+                    System.out.println(ex);
                 }
                 root.seek(initialPosition + ((i + 1) * DIR_ENTRY_SIZE));
             } else {
@@ -178,37 +178,39 @@ public class FileSystem {
         }
         return listEntry;
     }
-    
-    public List<DirectoryEntry> readDirEntry2(char cluster)throws IOException{
-        List<DirectoryEntry> listEntry=new LinkedList<DirectoryEntry>();
-        int initialPosition = DATA_REGION_START + (((int)cluster) * CLUSTER_SIZE);
+
+    public List<DirectoryEntry> readDirEntry2(char cluster) throws IOException {
+        List<DirectoryEntry> listEntry = new LinkedList<DirectoryEntry>();
+        int initialPosition = DATA_REGION_START + (((int) cluster) * CLUSTER_SIZE);
         root.seek(initialPosition);
         byte[] readData = new byte[32];
         byte[] fecha = new byte[8];
         byte[] clusterHead = new byte[2];
         byte[] fileSize = new byte[4];
-        int cont=0;
+        int cont = 0;
         for (int i = 0; i < DIR_ENTRY_MAX_FILES; i++) {
-            int check=root.read(readData);
-            if (check!=0) {
-                try{
-                    cont=0;
+            root.read(readData);
+            String decodedPosition = new String(readData);
+            int positionCheck = (int) decodedPosition.charAt(0);
+            if (positionCheck != 0) {
+                try {
+                    cont = 0;
                     for (int j = 12; j <= 19; j++) {
-                        fecha[cont]=readData[j];
+                        fecha[cont] = readData[j];
                         cont++;
                     }
-                    clusterHead[0]=readData[20];
-                    clusterHead[1]=readData[21];
-                    cont=0;
+                    clusterHead[0] = readData[20];
+                    clusterHead[1] = readData[21];
+                    cont = 0;
                     for (int k = 22; k <= 25; k++) {
-                        fileSize[cont]=readData[k];
+                        fileSize[cont] = readData[k];
                         cont++;
                     }
-                    DirectoryEntry dirEntry = new DirectoryEntry(new String(readData, 1, 10),readData[11],byteToLong(fecha),byteToChar(clusterHead),byteToInt(fileSize));
-                    dirEntry.setCurrentFilePosition(initialPosition+(i*DIR_ENTRY_SIZE));
+                    DirectoryEntry dirEntry = new DirectoryEntry(new String(readData, 1, 10), readData[11], byteToLong(fecha), byteToChar(clusterHead), byteToInt(fileSize));
+                    dirEntry.setCurrentFilePosition(initialPosition + (i * DIR_ENTRY_SIZE));
                     listEntry.add(dirEntry);
-                }catch(Exception ex){
-                    System.out.println(ex); 
+                } catch (Exception ex) {
+                    System.out.println(ex);
                 }
                 root.seek(initialPosition + ((i + 1) * DIR_ENTRY_SIZE));
             } else {
@@ -217,8 +219,47 @@ public class FileSystem {
         }
         return listEntry;
     }
-    
-    public DirectoryEntry compareFileName(List<DirectoryEntry> listEntry,String filename)throws IOException {
+
+    public List<DirectoryEntry> readDirEntryRoot() throws IOException {
+        List<DirectoryEntry> listEntry = new LinkedList<DirectoryEntry>();
+        int initialPosition = ROOT_REGION_START;
+        root.seek(initialPosition);
+        byte[] readData = new byte[32];
+        byte[] fecha = new byte[8];
+        byte[] clusterHead = new byte[2];
+        byte[] fileSize = new byte[4];
+        int cont = 0;
+        for (int i = 0; i < ROOT_ENTRY_MAX_FILES; i++) {
+            root.read(readData);
+            String decodedPosition = new String(readData);
+            int positionCheck = (int) decodedPosition.charAt(0);
+            if (positionCheck != 0) {
+                try {
+                    cont = 0;
+                    for (int j = 12; j <= 19; j++) {
+                        fecha[cont] = readData[j];
+                        cont++;
+                    }
+                    clusterHead[0] = readData[20];
+                    clusterHead[1] = readData[21];
+                    cont = 0;
+                    for (int k = 22; k <= 25; k++) {
+                        fileSize[cont] = readData[k];
+                        cont++;
+                    }
+                    DirectoryEntry dirEntry = new DirectoryEntry(new String(readData, 1, 10), readData[11], byteToLong(fecha), byteToChar(clusterHead), byteToInt(fileSize));
+                    dirEntry.setCurrentFilePosition(initialPosition + (i * DIR_ENTRY_SIZE));
+                    listEntry.add(dirEntry);
+                } catch (Exception ex) {
+                    System.out.println(ex);
+                }
+                root.seek(initialPosition + ((i + 1) * DIR_ENTRY_SIZE));
+            }
+        }
+        return listEntry;
+    }
+
+    public DirectoryEntry compareFileName(List<DirectoryEntry> listEntry, String filename) throws IOException {
         for (int i = 0; i < listEntry.size(); i++) {
             if (listEntry.get(i).getFileName().equals(filename)) {
                 return listEntry.get(i);
@@ -300,8 +341,8 @@ public class FileSystem {
         }
         return true;
     }
-    
-     public int byteToInt(byte[] byteBarray) {
+
+    public int byteToInt(byte[] byteBarray) {
         return ByteBuffer.wrap(byteBarray).order(ByteOrder.BIG_ENDIAN).getInt();
     }
 

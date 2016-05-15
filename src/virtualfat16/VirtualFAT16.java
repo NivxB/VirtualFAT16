@@ -74,14 +74,21 @@ public class VirtualFAT16 {
     }
 
     public static void mkdir(String[] command) {
+        /*
+        Si estamos en el root las operaciones se hacen sobre el root, no sobre un cluster.
+        Si estamos en otro directorio las operaciones se han en el cluster de ese directorio
+        */
         if (command.length == 2) {
             if (actualDir.equals("~/")) {
                 String[] filename=command[1].split("\\.");
                 if (filename.length==1) {//directorio
                     try{
-                        DirectoryEntry dirEntry=new DirectoryEntry(command[1],(byte)0x0010,new java.util.Date().getTime(),FS.findFreeCluster(),0);
-                        FS.writeDirEntry(dirEntry,dirEntry.getClusterHead(),true);
-                        List<DirectoryEntry> lista=FS.readDirEntry2(dirEntry.getClusterHead());
+                        DirectoryEntry dirEntry=new DirectoryEntry(command[1],DirectoryEntry.DIRECTORY,new java.util.Date().getTime(),FS.findFreeCluster(),0);
+                        FS.writeDirEntry(dirEntry,'0',true);
+                        //el root no necesita el clusterHead, ya que solamente escribe en su propia onda. 
+                        List<DirectoryEntry> lista=FS.readDirEntryRoot();
+                        //como estamos en root tenemos que leer las dirEntry en root no en el clusterHead
+                        //el clusterHead apunta a los directorios hijos. 
                         for (int i = 0; i < lista.size(); i++) {
                             System.out.println(lista.get(i).getFileName());
                         }
@@ -90,8 +97,9 @@ public class VirtualFAT16 {
                     }
                 }else if (filename.length==2) {//archivo
                     try{
-                        DirectoryEntry dirEntry=new DirectoryEntry(command[1],(byte)0x0020,new java.util.Date().getTime(),FS.findFreeCluster(),0);
-                        FS.writeDirEntry(dirEntry,dirEntry.getClusterHead(),false);
+                        DirectoryEntry dirEntry=new DirectoryEntry(command[1],DirectoryEntry.FILE,new java.util.Date().getTime(),FS.findFreeCluster(),0);
+                        FS.writeDirEntry(dirEntry,'0',true);
+                        //estamos en root
                     }catch(Exception ex){
                         
                     }
