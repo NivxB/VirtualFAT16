@@ -81,6 +81,26 @@ public class DirectoryEntry {
         this.currentFilePosition = currentFilePosition;
     }
 
+    public byte[] getByteRepresentation() {
+        byte[] retVal = new byte[FileSystem.DIR_ENTRY_SIZE];
+        retVal[0] = 1;
+        for (int i = 0; i < 10; i++) {
+            if (i < this.fileName.getBytes().length) {
+                retVal[i + 1] = (this.fileName.getBytes())[i];
+            } else {
+                retVal[i + 1] = ' ';
+            }
+        }
+        retVal[11] = fileType;
+        byte[] tmpLong = longToByte(this.createdOn);
+        System.arraycopy(tmpLong, 0, retVal, 12, 8);
+        byte[] tmpCluster = charToByte(this.clusterHead);
+        System.arraycopy(tmpCluster, 0, retVal, 20, 2);
+        byte[] tmpInteger = intToByte(this.fileSize);
+        System.arraycopy(tmpInteger, 0, retVal, 22, 4);
+        return retVal;
+    }
+
     public byte[] intToByte(int myInteger) {
         return ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt(myInteger).array();
     }
@@ -88,7 +108,7 @@ public class DirectoryEntry {
     public int byteToInt(byte[] byteBarray) {
         return ByteBuffer.wrap(byteBarray).order(ByteOrder.BIG_ENDIAN).getInt();
     }
-    
+
     public byte[] longToByte(long myLong) { //dick
         return ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putLong(myLong).array();
     }
@@ -96,7 +116,7 @@ public class DirectoryEntry {
     public long byteToLong(byte[] byteBarray) {
         return ByteBuffer.wrap(byteBarray).order(ByteOrder.BIG_ENDIAN).getLong();
     }
-    
+
     public byte[] charToByte(char myChar) {
         return ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN).putChar(myChar).array();
     }

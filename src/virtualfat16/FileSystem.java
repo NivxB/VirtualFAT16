@@ -151,24 +151,24 @@ public class FileSystem {
         return decodedPosition.charAt(0);
     }
 
-    public void ReadDirEntry(int cluster,char clusterhead) throws IOException {
-        
+    public void ReadDirEntry(int cluster, char clusterhead) throws IOException {
+
         int initialPosition = DATA_REGION_START + (cluster * CLUSTER_SIZE);
         root.seek(initialPosition);
         byte[] readData = new byte[32];
         for (int i = 0; i < DIR_ENTRY_MAX_FILES; i++) {
-            int check=root.read(readData);
-            if (check!=0) {
-                try{
-                    DirectoryEntry dirEntry = (DirectoryEntry)(convertFromBytes(readData));
-                    if (dirEntry.getClusterHead()== clusterhead) {
+            int check = root.read(readData);
+            if (check != 0) {
+                try {
+                    DirectoryEntry dirEntry = (DirectoryEntry) (convertFromBytes(readData));
+                    if (dirEntry.getClusterHead() == clusterhead) {
                         System.out.println("Yay?!");
                     }
-                }catch(Exception ex){
-                    System.out.println(ex); 
+                } catch (Exception ex) {
+                    System.out.println(ex);
                 }
                 root.seek(initialPosition + ((i + 1) * DIR_ENTRY_SIZE));
-            }else{
+            } else {
                 break;
             }
         }
@@ -176,7 +176,7 @@ public class FileSystem {
 
     private byte[] convertToBytes(Object object) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutput out = new ObjectOutputStream(bos)) {
+                ObjectOutput out = new ObjectOutputStream(bos)) {
             out.writeObject(object);
             return bos.toByteArray();
         }
@@ -184,7 +184,7 @@ public class FileSystem {
 
     private Object convertFromBytes(byte[] bytes) throws IOException, ClassNotFoundException {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-            ObjectInput in = new ObjectInputStream(bis)) {
+                ObjectInput in = new ObjectInputStream(bis)) {
             return in.readObject();
         }
     }
@@ -205,34 +205,53 @@ public class FileSystem {
 
         return retVal.toString().trim();
     }
-    
-    public boolean writeData(DirectoryEntry dirEntry,String toWrite) throws IOException{
+
+    public boolean writeData(DirectoryEntry dirEntry, String toWrite) throws IOException {
         if (dirEntry.getFileType() != DirectoryEntry.FILE) {
             return false;
         }
-        int clustersNeeded = (int)Math.ceil((double)toWrite.length() / (double)CLUSTER_SIZE);
+        int clustersNeeded = (int) Math.ceil((double) toWrite.length() / (double) CLUSTER_SIZE);
         int fileSize = toWrite.length();
         dirEntry.setFileSize(fileSize);
         root.seek(dirEntry.getCurrentFilePosition());
-        // VOLVER A ESCRIBIR EL DIRENTRY  root.write();
+        root.write(dirEntry.getByteRepresentation());
         char clusterPosition = dirEntry.getClusterHead();
         int dataWrote = 0;
         byte[] bytesToWrite = toWrite.getBytes();
         for (int i = 0; i < clustersNeeded; i++) {
             root.seek(DATA_REGION_START + (((int) clusterPosition) * CLUSTER_SIZE));
             int pos = bytesToWrite.length - dataWrote;
-            if (pos >= CLUSTER_SIZE){
+            if (pos >= CLUSTER_SIZE) {
                 root.write(bytesToWrite, pos, CLUSTER_SIZE);
                 pos += CLUSTER_SIZE;
-            }else{
+            } else {
                 root.write(bytesToWrite, pos, bytesToWrite.length - pos);
                 pos += bytesToWrite.length - pos;
             }
             char tmpNextCluster = getNextClusterPosition(clusterPosition);
-            if (tmpNextCluster == EOF && (i + 1) < clustersNeeded){
+            if (tmpNextCluster == EOF && (i + 1) < clustersNeeded) {
                 tmpNextCluster = findFreeCluster(clusterPosition);
             }
             clusterPosition = tmpNextCluster;
+        }
+        return true;
+    }
+
+    public boolean writeDirEntry(DirectoryEntry dirEntry, char myCluster, boolean isRoot) throws IOException {
+        if (isRoot) {
+            int freeDirEntry = findFreeEntryRoot();
+            if (freeDirEntry == -1) {
+                return false;
+            }
+            root.seek(ROOT_REGION_START + (freeDirEntry * DIR_ENTRY_SIZE));
+            root.write(dirEntry.getByteRepresentation());
+        } else {
+            int freeDirEntry = findFreeEntryOnCluster(myCluster);
+            if (freeDirEntry == -1) {
+                return false;
+            }
+            root.seek(DATA_REGION_START + (((int) myCluster) * CLUSTER_SIZE) + (freeDirEntry * DIR_ENTRY_SIZE));
+            root.write(dirEntry.getByteRepresentation());
         }
         return true;
     }
