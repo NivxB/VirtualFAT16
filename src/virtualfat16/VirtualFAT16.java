@@ -136,14 +136,14 @@ public class VirtualFAT16 {
                     if (filename.length == 1) {//directorio
                         if (!existe) {
                             DirectoryEntry dirEntry = new DirectoryEntry(command[1], DirectoryEntry.DIRECTORY, new java.util.Date().getTime(), FS.findFreeCluster(), 0);
-                            FS.writeDirEntry(dirEntry, actualDirEntry.getClusterHead(), true);
+                            FS.writeDirEntry(dirEntry, actualDirEntry.getClusterHead(), false);
                         } else {
                             System.out.println("Ya existe un directorio con ese nombre!");
                         }
                     } else if (filename.length == 2) {//archivo
                         if (!existe) {
                             DirectoryEntry dirEntry = new DirectoryEntry(command[1], DirectoryEntry.FILE, new java.util.Date().getTime(), FS.findFreeCluster(), 0);
-                            FS.writeDirEntry(dirEntry, actualDirEntry.getClusterHead(), true);
+                            FS.writeDirEntry(dirEntry, actualDirEntry.getClusterHead(), false);
                         } else {
                             System.out.println("Ya existe un archivo con ese nombre!");
                         }
@@ -164,11 +164,16 @@ public class VirtualFAT16 {
             String[] filename = command[1].split("\\.");
             if (filename.length==1) {//directorio
                 try {
-                    boolean existe = true;
-                    List<DirectoryEntry> lista = FS.readDirEntry('0');
+                    boolean existe = false;
+                    List<DirectoryEntry> lista=null;
+                    if (actualDirEntry==null) {
+                        lista= FS.readDirEntryRoot();
+                    }else{
+                        lista= FS.readDirEntry(actualDirEntry.getClusterHead());
+                    }
                     for (int i = 0; i < lista.size(); i++) {
                         if (lista.get(i).getFileName().replaceAll(" ", "").equals(command[1])) {
-                            existe = false;
+                            existe = true;
                             actualDirEntry=lista.get(i);
                             break;
                         }
