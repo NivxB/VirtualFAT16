@@ -51,7 +51,6 @@ public class FileSystem {
             root.seek((FILE_SYSTEM_SIZE) - 1);
             root.write(1);
         }
-        ReadDirEntry(0);
     }
 
     public int findFreeEntryRoot() throws IOException {
@@ -93,7 +92,7 @@ public class FileSystem {
         return (char) -1;
     }
 
-    public char findFreeCluster(int previousCluster) throws IOException {
+    public char findFreeCluster(char previousCluster) throws IOException {
         root.seek(FAT_REGION_START);
         for (int i = 0; i < FAT_ENTRY_MAX_AMOUNT; i++) {
             byte[] onFAT = new byte[FAT_ENTRY_SIZE];
@@ -111,13 +110,13 @@ public class FileSystem {
                 root.writeChar(EOF);
                 //vamos a enlazar chaval
                 // para que la fat anterior apunte a la siguiente fat
-                root.seek(FAT_REGION_START + (previousCluster * FAT_ENTRY_SIZE));
+                root.seek(FAT_REGION_START + (((int) previousCluster) * FAT_ENTRY_SIZE));
                 root.write(decodedPosition.charAt(0));
                 //reservamos en primera FAT
                 root.seek(COPY_FAT_REGION_START + (i * FAT_ENTRY_SIZE));
                 //reservamos copy fat
                 root.writeChar(EOF);
-                root.seek(COPY_FAT_REGION_START + (previousCluster * FAT_ENTRY_SIZE));
+                root.seek(COPY_FAT_REGION_START + (((int) previousCluster) * FAT_ENTRY_SIZE));
                 root.write(decodedPosition.charAt(0));
                 return (char) i;
             }
@@ -125,8 +124,8 @@ public class FileSystem {
         return (char) -1;
     }
 
-    public int findFreeEntryOnCluster(int cluster) throws IOException {
-        int initialPosition = DATA_REGION_START + (cluster * CLUSTER_SIZE);
+    public int findFreeEntryOnCluster(char cluster) throws IOException {
+        int initialPosition = DATA_REGION_START + (((int) cluster) * CLUSTER_SIZE);
         root.seek(initialPosition);
         for (int i = 0; i < DIR_ENTRY_MAX_FILES; i++) {
             int check = root.read();
@@ -139,8 +138,8 @@ public class FileSystem {
         return -1;
     }
 
-    public char getNextClusterPosition(int cluster) throws IOException {
-        root.seek(FAT_REGION_START + (cluster * CLUSTER_SIZE));
+    public char getNextClusterPosition(char cluster) throws IOException {
+        root.seek(FAT_REGION_START + (((int) cluster) * CLUSTER_SIZE));
         byte[] nextPosition = new byte[2];
         root.read(nextPosition);
         String decodedPosition = new String(nextPosition);
@@ -189,4 +188,51 @@ public class FileSystem {
         }
     }
 
+    public String getData(DirectoryEntry dirEntry) throws IOException {
+        StringBuilder retVal = new StringBuilder();
+        if (dirEntry.getFileType() != DirectoryEntry.FILE) {
+            return "ERROR";
+        }
+        char currentPosition = dirEntry.getClusterHead();
+        do {
+            byte[] readData = new byte[CLUSTER_SIZE];
+            root.seek(DATA_REGION_START + (((int) currentPosition) * CLUSTER_SIZE));
+            root.read(readData);
+            retVal.append(new String(readData));
+            currentPosition = getNextClusterPosition(currentPosition);
+        } while (currentPosition != EOF);
+
+        return retVal.toString().trim();
+    }
+    
+    public boolean writeData(DirectoryEntry dirEntry,String toWrite) throws IOException{
+        if (dirEntry.getFileType() != DirectoryEntry.FILE) {
+            return false;
+        }
+        int clustersNeeded = (int)Math.ceil((double)toWrite.length() / (double)CLUSTER_SIZE);
+        int fileSize = toWrite.length();
+        dirEntry.setFileSize(fileSize);
+        root.seek(dirEntry.getCurrentFilePosition());
+        // VOLVER A ESCRIBIR EL DIRENTRY  root.write();
+        char clusterPosition = dirEntry.getClusterHead();
+        int dataWrote = 0;
+        byte[] bytesToWrite = toWrite.getBytes();
+        for (int i = 0; i < clustersNeeded; i++) {
+            root.seek(DATA_REGION_START + (((int) clusterPosition) * CLUSTER_SIZE));
+            int pos = bytesToWrite.length - dataWrote;
+            if (pos >= CLUSTER_SIZE){
+                root.write(bytesToWrite, pos, CLUSTER_SIZE);
+                pos += CLUSTER_SIZE;
+            }else{
+                root.write(bytesToWrite, pos, bytesToWrite.length - pos);
+                pos += bytesToWrite.length - pos;
+            }
+            char tmpNextCluster = getNextClusterPosition(clusterPosition);
+            if (tmpNextCluster == EOF && (i + 1) < clustersNeeded){
+                tmpNextCluster = findFreeCluster(clusterPosition);
+            }
+            clusterPosition = tmpNextCluster;
+        }
+        return true;
+    }
 }
