@@ -5,11 +5,16 @@
  */
 package virtualfat16;
 
+import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 /**
  *
  * @author kbarahona,elco45
  */
 public class DirectoryEntry {
+
     public static final byte DIRECTORY = 0x0010;
     public static final byte FILE = 0x0020;
     public byte deleted;
@@ -29,7 +34,7 @@ public class DirectoryEntry {
         this.currentFilePosition = 0;
         this.deleted = 0x1;
     }
-    
+
     public DirectoryEntry(String fileName, byte fileType, long createdOn, char clusterHead, int fileSize, byte deleted) {
         this.fileName = fileName;
         this.fileType = fileType;
@@ -39,13 +44,13 @@ public class DirectoryEntry {
         this.currentFilePosition = 0;
         this.deleted = deleted;
     }
-    
+
     public int getFileSize() {
         return fileSize;
     }
-    
+
     public void setFileSize(int fileSize) {
-        this.fileSize =  fileSize;
+        this.fileSize = fileSize;
     }
 
     public char getClusterHead() {
@@ -74,5 +79,29 @@ public class DirectoryEntry {
 
     public void setCurrentFilePosition(long currentFilePosition) {
         this.currentFilePosition = currentFilePosition;
+    }
+
+    public byte[] intToByte(int myInteger) {
+        return ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt(myInteger).array();
+    }
+
+    public int byteToInt(byte[] byteBarray) {
+        return ByteBuffer.wrap(byteBarray).order(ByteOrder.BIG_ENDIAN).getInt();
+    }
+    
+    public byte[] longToByte(long myLong) { //dick
+        return ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putLong(myLong).array();
+    }
+
+    public long byteToLong(byte[] byteBarray) {
+        return ByteBuffer.wrap(byteBarray).order(ByteOrder.BIG_ENDIAN).getLong();
+    }
+    
+    public byte[] charToByte(char myChar) {
+        return ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN).putChar(myChar).array();
+    }
+
+    public char byteToChar(byte[] byteBarray) {
+        return ByteBuffer.wrap(byteBarray).order(ByteOrder.BIG_ENDIAN).getChar();
     }
 }

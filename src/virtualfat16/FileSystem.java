@@ -152,6 +152,7 @@ public class FileSystem {
     }
 
     public void ReadDirEntry(int cluster,char clusterhead) throws IOException {
+        
         int initialPosition = DATA_REGION_START + (cluster * CLUSTER_SIZE);
         root.seek(initialPosition);
         byte[] readData = new byte[32];
