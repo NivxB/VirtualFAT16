@@ -341,17 +341,27 @@ public class FileSystem {
     }
 
     public boolean deleteDirEntry(DirectoryEntry dirEntry) throws IOException {
+        if (dirEntry.getFileType() == DirectoryEntry.DIRECTORY) {
+            List<DirectoryEntry> list = readDirEntry(dirEntry.getClusterHead());
+            if (!list.isEmpty()) {
+                System.err.println("Directory is not empty");
+                return false;
+            }
+        }
         root.seek(dirEntry.getCurrentFilePosition());
-        root.write((char) 0);
-        root.seek(FAT_REGION_START + ((int) dirEntry.getClusterHead() * FAT_ENTRY_SIZE));
         root.write((char) 0);
         if (dirEntry.getFileType() == DirectoryEntry.FILE) {
             char nextCluster = getNextClusterPosition(dirEntry.getClusterHead());
             while (nextCluster != EOF) {
+                char tmpNext = getNextClusterPosition(nextCluster);
                 root.seek(FAT_REGION_START + ((int) nextCluster * FAT_ENTRY_SIZE));
                 root.write((char) 0);
+                nextCluster = tmpNext;
             }
         }
+        root.seek(FAT_REGION_START + ((int) dirEntry.getClusterHead() * FAT_ENTRY_SIZE));
+        root.write((char) 0);
+
         return true;
     }
 
