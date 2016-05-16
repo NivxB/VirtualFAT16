@@ -315,31 +315,46 @@ public class FileSystem {
         return true;
     }
 
-    public DirectoryEntry getDirectoryEntryPath(String fullPath) throws IOException{
+    public DirectoryEntry getDirectoryEntryPath(String fullPath) throws IOException {
         String[] fileNames = fullPath.split("/");
-        if (fileNames.length == 0){
+        if (fileNames.length == 0) {
             return null;
         }
         DirectoryEntry retVal = null;
-        for (int i = 1 ; i < fileNames.length ; i++){
+        for (int i = 1; i < fileNames.length; i++) {
             String fileName = fileNames[i];
             List<DirectoryEntry> searchList = null;
-            if (i == 1){
+            if (i == 1) {
                 searchList = readDirEntryRoot();
-            }else{
+            } else {
                 searchList = readDirEntry(retVal.getClusterHead());
             }
-            if (searchList == null){
+            if (searchList == null) {
                 return null;
             }
-            retVal = compareFileName(searchList,fileName);
-            if (retVal == null){
+            retVal = compareFileName(searchList, fileName);
+            if (retVal == null) {
                 return null;
             }
         }
         return retVal;
     }
-    
+
+    public boolean deleteDirEntry(DirectoryEntry dirEntry) throws IOException {
+        root.seek(dirEntry.getCurrentFilePosition());
+        root.write((char) 0);
+        root.seek(FAT_REGION_START + ((int) dirEntry.getClusterHead() * FAT_ENTRY_SIZE));
+        root.write((char) 0);
+        if (dirEntry.getFileType() == DirectoryEntry.FILE) {
+            char nextCluster = getNextClusterPosition(dirEntry.getClusterHead());
+            while (nextCluster != EOF) {
+                root.seek(FAT_REGION_START + ((int) nextCluster * FAT_ENTRY_SIZE));
+                root.write((char) 0);
+            }
+        }
+        return true;
+    }
+
     public int byteToInt(byte[] byteBarray) {
         return ByteBuffer.wrap(byteBarray).order(ByteOrder.BIG_ENDIAN).getInt();
     }
