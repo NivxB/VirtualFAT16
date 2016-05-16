@@ -255,70 +255,68 @@ public class VirtualFAT16 {
     }
 
     public static void cat(String[] command) {
-        Scanner sc= new Scanner(System.in);
+        Scanner sc = new Scanner(System.in);
         if (command[1].equals(">")) {
             if (command.length == 3) {//cat >
-                boolean existe = false;//para saber si se ha usado el nombre del directorio anteriormente
-                String[] filename = command[2].split("\\.");
-                if (filename.length == 2) {//es archivo
-                    try {
-                        List<DirectoryEntry> lista = FS.readDirEntry(actualDirEntry.getClusterHead());
-                        DirectoryEntry dirEntryTmp=null;
-                        for (int i = 0; i < lista.size(); i++) {
-                            if (lista.get(i).getFileName().replaceAll(" ", "").equals(command[2])) {
-                                existe = true;
-                                dirEntryTmp=lista.get(i);
-                                break;
-                            }
-                        }
-                        if (existe) {//solo mostrar el contenido
-                            String tmp ="";
-                            tmp=sc.nextLine();
-                            FS.writeData(dirEntryTmp, tmp);
-                        } else {//no existe, se tiene que crear el archivo
-                            DirectoryEntry dirEntry = new DirectoryEntry(command[2], DirectoryEntry.FILE, new java.util.Date().getTime(), FS.findFreeCluster(), 0);
-                            if (actualDirEntry == null) {//root
-                                FS.writeDirEntry(dirEntry, actualDirEntry.getClusterHead(), true);
-                            } else {//fuera de root
-                                FS.writeDirEntry(dirEntry, actualDirEntry.getClusterHead(), false);
-                            }
-                            String tmp ="";
-                            tmp=sc.nextLine();
-                            FS.writeData(dirEntry, tmp);
-                        }
-                    } catch (Exception ex) {
 
-                    }
-                } else {//es directorio
-                    System.out.println("Error! El valor que ingresó es un directorio");
-                }
-            } else {
-                System.out.println("Falta el nombre del archivo!");
-            }
-        } else if (command.length == 2) {//cat normal
-            boolean existe = false;//para saber si se ha usado el nombre del directorio anteriormente
-            String[] filename = command[1].split("\\.");
-            if (filename.length == 2) {//es archivo
                 try {
-                    List<DirectoryEntry> lista = FS.readDirEntry(actualDirEntry.getClusterHead());
-                    DirectoryEntry dirEntry=null;
-                    for (int i = 0; i < lista.size(); i++) {
-                        if (lista.get(i).getFileName().replaceAll(" ", "").equals(command[1])) {
-                            existe = true;
-                            dirEntry=lista.get(i);
-                            break;
-                        }
+                    List<DirectoryEntry> lista = null;
+                    if (actualDirEntry == null) {
+                        lista = FS.readDirEntryRoot();
+                    } else {
+                        lista = FS.readDirEntry(actualDirEntry.getClusterHead());
                     }
-                    if (existe) {//solo mostrar el contenido
-                        System.out.println(FS.getData(dirEntry));
+                    DirectoryEntry dirEntryTmp = FS.compareFileName(lista, command[2]);
+                    if (dirEntryTmp != null) {//solo mostrar el contenido
+                        if (dirEntryTmp.getFileType() == DirectoryEntry.DIRECTORY) {
+                            System.err.println("Not a file");
+                            return;
+                        }
+                        String tmp = "";
+                        tmp = sc.nextLine();
+                        FS.writeData(dirEntryTmp, tmp);
                     } else {//no existe, se tiene que crear el archivo
-                        System.out.println("No existe tal archivo!");
+                        DirectoryEntry dirEntry = new DirectoryEntry(command[2], DirectoryEntry.FILE, new java.util.Date().getTime(), FS.findFreeCluster(), 0);
+                        if (actualDirEntry == null) {//root
+                            FS.writeDirEntry(dirEntry, '0', true);
+                            lista = FS.readDirEntryRoot();
+                        } else {//fuera de root
+                            FS.writeDirEntry(dirEntry, actualDirEntry.getClusterHead(), false);
+                            lista = FS.readDirEntry(actualDirEntry.getClusterHead());
+                        }
+                        dirEntry = FS.compareFileName(lista, command[2]);
+                        String tmp = "";
+                        tmp = sc.nextLine();
+                        FS.writeData(dirEntry, tmp);
                     }
                 } catch (Exception ex) {
 
                 }
-            } else {//es directorio
-                System.out.println("Error! El valor que ingresó es un directorio");
+
+            } else {
+                System.out.println("Falta el nombre del archivo!");
+            }
+        } else if (command.length == 2) {//cat normal
+
+            try {
+                List<DirectoryEntry> lista = null;
+                if (actualDirEntry == null) {
+                    lista = FS.readDirEntryRoot();
+                } else {
+                    lista = FS.readDirEntry(actualDirEntry.getClusterHead());
+                }
+                DirectoryEntry dirEntry = FS.compareFileName(lista, command[1]);
+                if (dirEntry != null) {//solo mostrar el contenido
+                    if (dirEntry.getFileType() == DirectoryEntry.DIRECTORY) {
+                        System.err.println("Not a file");
+                        return;
+                    }
+                    System.out.println(FS.getData(dirEntry));
+                } else {//no existe, se tiene que crear el archivo
+                    System.out.println("No existe tal archivo!");
+                }
+            } catch (Exception ex) {
+
             }
         } else {
             System.out.println("Falta el nombre del archivo!");

@@ -226,6 +226,7 @@ public class FileSystem {
                     }
                     DirectoryEntry dirEntry = new DirectoryEntry(new String(readData, 1, 10), readData[11], byteToLong(fecha), byteToChar(clusterHead), byteToInt(fileSize));
                     dirEntry.setCurrentFilePosition(initialPosition + (i * DIR_ENTRY_SIZE));
+                    //System.out.println(dirEntry.getCurrentFilePosition());
                     listEntry.add(dirEntry);
                 } catch (Exception ex) {
                     System.out.println(ex);
@@ -256,7 +257,9 @@ public class FileSystem {
             root.seek(DATA_REGION_START + (((int) currentPosition) * CLUSTER_SIZE));
             root.read(readData);
             retVal.append(new String(readData));
+            //System.out.println(retVal.toString());
             currentPosition = getNextClusterPosition(currentPosition);
+            //System.out.println(currentPosition);
         } while (currentPosition != EOF);
 
         return retVal.toString().trim();
@@ -278,11 +281,11 @@ public class FileSystem {
             root.seek(DATA_REGION_START + (((int) clusterPosition) * CLUSTER_SIZE));
             int pos = bytesToWrite.length - dataWrote;
             if (pos >= CLUSTER_SIZE) {
-                root.write(bytesToWrite, pos, CLUSTER_SIZE);
-                pos += CLUSTER_SIZE;
+                root.write(bytesToWrite, dataWrote, CLUSTER_SIZE);
+                dataWrote += CLUSTER_SIZE;
             } else {
-                root.write(bytesToWrite, pos, bytesToWrite.length - pos);
-                pos += bytesToWrite.length - pos;
+                root.write(bytesToWrite, dataWrote, bytesToWrite.length - dataWrote);
+                dataWrote += bytesToWrite.length - dataWrote;
             }
             char tmpNextCluster = getNextClusterPosition(clusterPosition);
             if (tmpNextCluster == EOF && (i + 1) < clustersNeeded) {
