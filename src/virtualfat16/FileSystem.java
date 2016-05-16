@@ -90,7 +90,7 @@ public class FileSystem {
                 root.seek(COPY_FAT_REGION_START + (i * FAT_ENTRY_SIZE));
                 //reservamos copy fat
                 root.write(EOF);
-                System.out.println(i);
+                //System.out.println(i);
                 return (char) i;
             }
         }
@@ -238,7 +238,7 @@ public class FileSystem {
 
     public DirectoryEntry compareFileName(List<DirectoryEntry> listEntry, String filename) throws IOException {
         for (int i = 0; i < listEntry.size(); i++) {
-            if (listEntry.get(i).getFileName().equals(filename)) {
+            if (listEntry.get(i).getFileName().trim().equals(filename.trim())) {
                 return listEntry.get(i);
             }
         }
@@ -312,6 +312,31 @@ public class FileSystem {
         return true;
     }
 
+    public DirectoryEntry getDirectoryEntryPath(String fullPath) throws IOException{
+        String[] fileNames = fullPath.split("/");
+        if (fileNames.length == 0){
+            return null;
+        }
+        DirectoryEntry retVal = null;
+        for (int i = 1 ; i < fileNames.length ; i++){
+            String fileName = fileNames[i];
+            List<DirectoryEntry> searchList = null;
+            if (i == 1){
+                searchList = readDirEntryRoot();
+            }else{
+                searchList = readDirEntry(retVal.getClusterHead());
+            }
+            if (searchList == null){
+                return null;
+            }
+            retVal = compareFileName(searchList,fileName);
+            if (retVal == null){
+                return null;
+            }
+        }
+        return retVal;
+    }
+    
     public int byteToInt(byte[] byteBarray) {
         return ByteBuffer.wrap(byteBarray).order(ByteOrder.BIG_ENDIAN).getInt();
     }

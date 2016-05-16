@@ -35,7 +35,7 @@ public class VirtualFAT16 {
         try {
             FS = new FileSystem();
             while (true) {
-                System.out.print("mi_sh " + actualDir + " >> $");
+                System.out.print("[root@localhost " + actualDir + "] $ ");
                 command = sc.nextLine();
                 comando = splitter(command);
                 num_command = verifyCommands(comando);
@@ -160,33 +160,95 @@ public class VirtualFAT16 {
     }
 
     public static void cd(String[] command) {
+        boolean movingToRoot = false;
         if (command.length == 2) {
-            String[] filename = command[1].split("\\.");
-            if (filename.length==1) {//directorio
-                try {
-                    boolean existe = false;
-                    List<DirectoryEntry> lista=null;
-                    if (actualDirEntry==null) {
-                        lista= FS.readDirEntryRoot();
-                    }else{
-                        lista= FS.readDirEntry(actualDirEntry.getClusterHead());
+
+            String[] path = command[1].split("/");
+
+            try {
+                DirectoryEntry tmpActual = actualDirEntry;
+                String tmpStringActual = actualDir;
+                if (command[1].charAt(0) == '/'){
+                    DirectoryEntry nextDir = FS.getDirectoryEntryPath(command[1]);
+                    if (nextDir != null){
+                        actualDir = command[1];
+                        actualDirEntry = nextDir;
                     }
-                    for (int i = 0; i < lista.size(); i++) {
-                        if (lista.get(i).getFileName().replaceAll(" ", "").equals(command[1])) {
-                            existe = true;
-                            actualDirEntry=lista.get(i);
+                    return;
+                }
+
+                for (int i = 0; i < path.length; i++) {
+                    String movingToDirName = path[i];
+                    DirectoryEntry nextDir = null;
+                    List<DirectoryEntry> lista = null;
+                    if (movingToDirName.trim().equals("..")) {
+                        String checkVal = tmpStringActual;
+                        if (checkVal.split("/").length == 0) {
+                            System.err.println("No se puede ir antes de root");
+                            break;
+                        } else {
+                            String rutaActual = "";
+                            for (int j = 0; j < checkVal.split("/").length - 1; j++) {
+                                if (j == 1) {
+                                    rutaActual = "";
+                                }
+                                rutaActual += "/" + checkVal.split("/")[j];
+                            }
+                            if (rutaActual.split("/").length == 0) {
+                                nextDir = null;
+                                tmpActual = null;
+                                actualDir = "/";
+                                tmpStringActual = rutaActual;
+                                movingToRoot = true;
+                                break;
+                            }
+                            nextDir = FS.getDirectoryEntryPath(rutaActual);
+                            tmpStringActual = "/";
+                            movingToDirName = rutaActual;
+                        }
+                    } else {
+                        if (tmpActual == null) {
+                            lista = FS.readDirEntryRoot();
+                        } else {
+                            lista = FS.readDirEntry(tmpActual.getClusterHead());
+                        }
+                        nextDir = FS.compareFileName(lista, movingToDirName);
+
+                    }
+                    if (nextDir == null) {
+                        tmpActual = null;
+                        break;
+                    } else {
+                        if (tmpStringActual.split("/").length == 0) {
+                            if (movingToDirName.charAt(0) == '/') {
+                                tmpStringActual = movingToDirName;
+                            } else {
+                                tmpStringActual = "/" + movingToDirName;
+                            }
+                        } else {
+                            tmpStringActual += "/" + movingToDirName;
+                        }
+                        if (nextDir.getFileType() == DirectoryEntry.FILE) {
+                            tmpActual = null;
+                            System.err.println(movingToDirName + " es un archivo");
                             break;
                         }
+                        tmpActual = nextDir;
+
                     }
-                    if (!existe) {
-                        System.out.println("El directorio que acaba de ingresar no existe aquí!");
-                    }
-                }catch(Exception ex){
-                    System.out.println(ex);
                 }
-            }else{//es un archivo
-                System.out.println("Error, tiene que ser un directorio!");
+                if (tmpActual != null || movingToRoot) {
+                    actualDirEntry = tmpActual;
+                    actualDir = tmpStringActual;
+
+                } else {
+                    System.err.println("El directorio no existe");
+                }
+
+            } catch (Exception ex) {
+                System.out.println(ex);
             }
+
         } else {
             System.out.println("Valor invalido!");
         }
@@ -223,21 +285,20 @@ public class VirtualFAT16 {
             } else {
                 System.out.println("Falta el nombre del archivo!");
             }
-        } else {
-            if (command.length == 2) {//cat normal
-                //si existe ese archivo en el directorio actual entonces
+        } else if (command.length == 2) {//cat normal
+            //si existe ese archivo en el directorio actual entonces
 
-                //si no, entonces tirar error
-            } else {
-                System.out.println("Falta el nombre del archivo!");
-            }
+            //si no, entonces tirar error
+        } else {
+            System.out.println("Falta el nombre del archivo!");
         }
     }
 
     public static void ls(String[] command) {
         if (command.length == 2) {
             if (command[1].equals("-l")) {
-                SimpleDateFormat df2 = new SimpleDateFormat("dd/MM/yyyy");
+                SimpleDateFormat df2 = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss");
+
                 try {
                     List<DirectoryEntry> lista;
                     if (actualDirEntry == null) {//dentro de root
@@ -247,7 +308,11 @@ public class VirtualFAT16 {
                     }
                     System.out.printf("%-30.30s %-30.30s %-30.30s %-30.30s%n", "Filename", "FileType", "DateCreated", "FileSize");
                     for (int i = 0; i < lista.size(); i++) {
-                        System.out.printf("%-30.30s %-30.30s %-30.30s %-30.30s%n", lista.get(i).getFileName(), lista.get(i).getFileType(), df2.format(new Date(lista.get(i).getCreatedOn() * 1000)), lista.get(i).getFileSize());
+                        String type = "Directory";
+                        if (lista.get(i).getFileType() == DirectoryEntry.FILE) {
+                            type = "File";
+                        }
+                        System.out.printf("%-30.30s %-30.30s %-30.30s %-30.30s%n", lista.get(i).getFileName(), type, df2.format(new Date(lista.get(i).getCreatedOn())), lista.get(i).getFileSize());
                     }
                 } catch (Exception ex) {
 
