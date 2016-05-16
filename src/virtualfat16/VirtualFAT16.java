@@ -86,7 +86,6 @@ public class VirtualFAT16 {
          */
         if (command.length == 2) {
             if (actualDirEntry == null) {//dentro de root
-                String[] filename = command[1].split("\\.");
                 try {
                     boolean existe = false;//para saber si se ha usado el nombre del directorio anteriormente
                     //el root no necesita el clusterHead, ya que solamente escribe en su propia onda. 
@@ -99,28 +98,17 @@ public class VirtualFAT16 {
                             break;
                         }
                     }
-                    if (filename.length == 1) {//directorio
-                        if (!existe) {
-                            DirectoryEntry dirEntry = new DirectoryEntry(command[1], DirectoryEntry.DIRECTORY, new java.util.Date().getTime(), FS.findFreeCluster(), 0);
-                            FS.writeDirEntry(dirEntry, '0', true);
-                        } else {
-                            System.out.println("Ya existe un directorio con ese nombre!");
-                        }
-                    } else if (filename.length == 2) {//archivo
-                        if (!existe) {
-                            DirectoryEntry dirEntry = new DirectoryEntry(command[1], DirectoryEntry.FILE, new java.util.Date().getTime(), FS.findFreeCluster(), 0);
-                            FS.writeDirEntry(dirEntry, '0', true);
-                        } else {
-                            System.out.println("Ya existe un archivo con ese nombre!");
-                        }
+                    if (!existe) {
+                        DirectoryEntry dirEntry = new DirectoryEntry(command[1], DirectoryEntry.DIRECTORY, new java.util.Date().getTime(), FS.findFreeCluster(), 0);
+                        FS.writeDirEntry(dirEntry, '0', true);
                     } else {
-                        System.out.println("Error, operación no válida!");
+                        System.out.println("Ya existe un directorio con ese nombre!");
                     }
+
                 } catch (Exception ex) {
                     System.out.println(ex);
                 }
             } else {//fuera de root
-                String[] filename = command[1].split("\\.");
                 try {
                     boolean existe = false;//para saber si se ha usado el nombre del directorio anteriormente
                     //el root no necesita el clusterHead, ya que solamente escribe en su propia onda. 
@@ -133,23 +121,13 @@ public class VirtualFAT16 {
                             break;
                         }
                     }
-                    if (filename.length == 1) {//directorio
-                        if (!existe) {
-                            DirectoryEntry dirEntry = new DirectoryEntry(command[1], DirectoryEntry.DIRECTORY, new java.util.Date().getTime(), FS.findFreeCluster(), 0);
-                            FS.writeDirEntry(dirEntry, actualDirEntry.getClusterHead(), false);
-                        } else {
-                            System.out.println("Ya existe un directorio con ese nombre!");
-                        }
-                    } else if (filename.length == 2) {//archivo
-                        if (!existe) {
-                            DirectoryEntry dirEntry = new DirectoryEntry(command[1], DirectoryEntry.FILE, new java.util.Date().getTime(), FS.findFreeCluster(), 0);
-                            FS.writeDirEntry(dirEntry, actualDirEntry.getClusterHead(), false);
-                        } else {
-                            System.out.println("Ya existe un archivo con ese nombre!");
-                        }
+                    if (!existe) {
+                        DirectoryEntry dirEntry = new DirectoryEntry(command[1], DirectoryEntry.DIRECTORY, new java.util.Date().getTime(), FS.findFreeCluster(), 0);
+                        FS.writeDirEntry(dirEntry, actualDirEntry.getClusterHead(), false);
                     } else {
-                        System.out.println("Error, operación no válida!");
+                        System.out.println("Ya existe un directorio con ese nombre!");
                     }
+
                 } catch (Exception ex) {
                     System.out.println(ex);
                 }
@@ -168,9 +146,9 @@ public class VirtualFAT16 {
             try {
                 DirectoryEntry tmpActual = actualDirEntry;
                 String tmpStringActual = actualDir;
-                if (command[1].charAt(0) == '/'){
+                if (command[1].charAt(0) == '/') {
                     DirectoryEntry nextDir = FS.getDirectoryEntryPath(command[1]);
-                    if (nextDir != null){
+                    if (nextDir != null) {
                         actualDir = command[1];
                         actualDirEntry = nextDir;
                     }
@@ -277,18 +255,71 @@ public class VirtualFAT16 {
     }
 
     public static void cat(String[] command) {
+        Scanner sc= new Scanner(System.in);
         if (command[1].equals(">")) {
             if (command.length == 3) {//cat >
-                //si existe ese archivo en el directorio actual entonces
+                boolean existe = false;//para saber si se ha usado el nombre del directorio anteriormente
+                String[] filename = command[2].split("\\.");
+                if (filename.length == 2) {//es archivo
+                    try {
+                        List<DirectoryEntry> lista = FS.readDirEntry(actualDirEntry.getClusterHead());
+                        DirectoryEntry dirEntryTmp=null;
+                        for (int i = 0; i < lista.size(); i++) {
+                            if (lista.get(i).getFileName().replaceAll(" ", "").equals(command[2])) {
+                                existe = true;
+                                dirEntryTmp=lista.get(i);
+                                break;
+                            }
+                        }
+                        if (existe) {//solo mostrar el contenido
+                            String tmp ="";
+                            tmp=sc.nextLine();
+                            FS.writeData(dirEntryTmp, tmp);
+                        } else {//no existe, se tiene que crear el archivo
+                            DirectoryEntry dirEntry = new DirectoryEntry(command[2], DirectoryEntry.FILE, new java.util.Date().getTime(), FS.findFreeCluster(), 0);
+                            if (actualDirEntry == null) {//root
+                                FS.writeDirEntry(dirEntry, actualDirEntry.getClusterHead(), true);
+                            } else {//fuera de root
+                                FS.writeDirEntry(dirEntry, actualDirEntry.getClusterHead(), false);
+                            }
+                            String tmp ="";
+                            tmp=sc.nextLine();
+                            FS.writeData(dirEntry, tmp);
+                        }
+                    } catch (Exception ex) {
 
-                //si no, hay que crearlo primero
+                    }
+                } else {//es directorio
+                    System.out.println("Error! El valor que ingresó es un directorio");
+                }
             } else {
                 System.out.println("Falta el nombre del archivo!");
             }
         } else if (command.length == 2) {//cat normal
-            //si existe ese archivo en el directorio actual entonces
+            boolean existe = false;//para saber si se ha usado el nombre del directorio anteriormente
+            String[] filename = command[1].split("\\.");
+            if (filename.length == 2) {//es archivo
+                try {
+                    List<DirectoryEntry> lista = FS.readDirEntry(actualDirEntry.getClusterHead());
+                    DirectoryEntry dirEntry=null;
+                    for (int i = 0; i < lista.size(); i++) {
+                        if (lista.get(i).getFileName().replaceAll(" ", "").equals(command[1])) {
+                            existe = true;
+                            dirEntry=lista.get(i);
+                            break;
+                        }
+                    }
+                    if (existe) {//solo mostrar el contenido
+                        System.out.println(FS.getData(dirEntry));
+                    } else {//no existe, se tiene que crear el archivo
+                        System.out.println("No existe tal archivo!");
+                    }
+                } catch (Exception ex) {
 
-            //si no, entonces tirar error
+                }
+            } else {//es directorio
+                System.out.println("Error! El valor que ingresó es un directorio");
+            }
         } else {
             System.out.println("Falta el nombre del archivo!");
         }
