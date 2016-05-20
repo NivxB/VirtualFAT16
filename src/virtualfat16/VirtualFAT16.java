@@ -233,22 +233,175 @@ public class VirtualFAT16 {
     }
 
     public static void rmdir(String[] command) {
+        boolean movingToRoot = false;
         if (command.length == 2) {
-            //si es un directorio entonces
-            //si existe ese archivo en el directorio actual entonces
+            String[] path = command[1].split("/");
+            try {
+                DirectoryEntry tmpActual = actualDirEntry;
+                String tmpStringActual = actualDir;
+                if (command[1].charAt(0) == '/') {
+                    DirectoryEntry nextDir = FS.getDirectoryEntryPath(command[1]);
+                    if (nextDir != null) {
+                        actualDir = command[1];
+                        actualDirEntry = nextDir;
+                    }
+                    return;
+                }
 
-            //si no, entonces tirar error
-            //si no es un directorio tirar error
+                for (int i = 0; i < path.length; i++) {
+                    String movingToDirName = path[i];
+                    DirectoryEntry nextDir = null;
+                    List<DirectoryEntry> lista = null;
+                    if (movingToDirName.trim().equals("..")) {
+                        String checkVal = tmpStringActual;
+                        if (checkVal.split("/").length == 0) {
+                            System.err.println("No se puede ir antes de root");
+                            break;
+                        } else {
+                            String rutaActual = "";
+                            for (int j = 0; j < checkVal.split("/").length - 1; j++) {
+                                if (j == 1) {
+                                    rutaActual = "";
+                                }
+                                rutaActual += "/" + checkVal.split("/")[j];
+                            }
+                            if (rutaActual.split("/").length == 0) {
+                                nextDir = null;
+                                tmpActual = null;
+                                actualDir = "/";
+                                tmpStringActual = rutaActual;
+                                movingToRoot = true;
+                                break;
+                            }
+                            nextDir = FS.getDirectoryEntryPath(rutaActual);
+                            tmpStringActual = "/";
+                            movingToDirName = rutaActual;
+                        }
+                    } else {
+                        if (tmpActual == null) {
+                            lista = FS.readDirEntryRoot();
+                        } else {
+                            lista = FS.readDirEntry(tmpActual.getClusterHead());
+                        }
+                        nextDir = FS.compareFileName(lista, movingToDirName);
+
+                    }
+                    if (nextDir == null) {
+                        tmpActual = null;
+                        break;
+                    } else {
+                        if (tmpStringActual.split("/").length == 0) {
+                            if (movingToDirName.charAt(0) == '/') {
+                                tmpStringActual = movingToDirName;
+                            } else {
+                                tmpStringActual = "/" + movingToDirName;
+                            }
+                        } else {
+                            tmpStringActual += "/" + movingToDirName;
+                        }
+                        if (nextDir.getFileType() == DirectoryEntry.FILE) {
+                            tmpActual = null;
+                            System.err.println(movingToDirName + " es un archivo");
+                            break;
+                        }
+                        tmpActual = nextDir;
+
+                    }
+                }
+                if (tmpActual != null || movingToRoot) {
+                    FS.deleteOnlyDirEntry(tmpActual);
+                } 
+            } catch (Exception ex) {
+                System.out.println(ex);
+            }
+
         } else {
             System.out.println("Valor invalido!");
         }
     }
 
     public static void rm(String[] command) {
+        boolean movingToRoot = false;
         if (command.length == 2) {
-            //si existe ese archivo en el directorio actual entonces
+            String[] path = command[1].split("/");
+            try {
+                DirectoryEntry tmpActual = actualDirEntry;
+                String tmpStringActual = actualDir;
+                if (command[1].charAt(0) == '/') {
+                    DirectoryEntry nextDir = FS.getDirectoryEntryPath(command[1]);
+                    if (nextDir != null) {
+                        actualDir = command[1];
+                        actualDirEntry = nextDir;
+                    }
+                    return;
+                }
 
-            //si no, entonces tirar error
+                for (int i = 0; i < path.length; i++) {
+                    String movingToDirName = path[i];
+                    DirectoryEntry nextDir = null;
+                    List<DirectoryEntry> lista = null;
+                    if (movingToDirName.trim().equals("..")) {
+                        String checkVal = tmpStringActual;
+                        if (checkVal.split("/").length == 0) {
+                            System.err.println("No se puede ir antes de root");
+                            break;
+                        } else {
+                            String rutaActual = "";
+                            for (int j = 0; j < checkVal.split("/").length - 1; j++) {
+                                if (j == 1) {
+                                    rutaActual = "";
+                                }
+                                rutaActual += "/" + checkVal.split("/")[j];
+                            }
+                            if (rutaActual.split("/").length == 0) {
+                                nextDir = null;
+                                tmpActual = null;
+                                actualDir = "/";
+                                tmpStringActual = rutaActual;
+                                movingToRoot = true;
+                                break;
+                            }
+                            nextDir = FS.getDirectoryEntryPath(rutaActual);
+                            tmpStringActual = "/";
+                            movingToDirName = rutaActual;
+                        }
+                    } else {
+                        if (tmpActual == null) {
+                            lista = FS.readDirEntryRoot();
+                        } else {
+                            lista = FS.readDirEntry(tmpActual.getClusterHead());
+                        }
+                        nextDir = FS.compareFileName(lista, movingToDirName);
+
+                    }
+                    if (nextDir == null) {
+                        tmpActual = null;
+                        break;
+                    } else {
+                        if (tmpStringActual.split("/").length == 0) {
+                            if (movingToDirName.charAt(0) == '/') {
+                                tmpStringActual = movingToDirName;
+                            } else {
+                                tmpStringActual = "/" + movingToDirName;
+                            }
+                        } else {
+                            tmpStringActual += "/" + movingToDirName;
+                        }
+
+                        tmpActual = nextDir;
+
+                    }
+                }
+                if (tmpActual != null || movingToRoot) {
+                    FS.deleteDirEntry(tmpActual);//ese metodo ta malito
+                } else {
+                    System.err.println("El directorio no existe");
+                }
+
+            } catch (Exception ex) {
+                System.out.println(ex);
+            }
+
         } else {
             System.out.println("Valor invalido!");
         }
@@ -340,8 +493,11 @@ public class VirtualFAT16 {
                         String type = "Directory";
                         if (lista.get(i).getFileType() == DirectoryEntry.FILE) {
                             type = "File";
+                            System.out.printf("%-30.30s %-30.30s %-30.30s %-30.30s%n", lista.get(i).getFileName(), type, df2.format(new Date(lista.get(i).getCreatedOn())), lista.get(i).getFileSize());
+                        }else{
+                             System.out.printf("%-30.30s %-30.30s %-30.30s %-30.30s%n", lista.get(i).getFileName(), type, df2.format(new Date(lista.get(i).getCreatedOn())), "- -");
                         }
-                        System.out.printf("%-30.30s %-30.30s %-30.30s %-30.30s%n", lista.get(i).getFileName(), type, df2.format(new Date(lista.get(i).getCreatedOn())), lista.get(i).getFileSize());
+                       
                     }
                 } catch (Exception ex) {
 

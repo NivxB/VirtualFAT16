@@ -5,14 +5,8 @@
  */
 package virtualfat16;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -340,29 +334,48 @@ public class FileSystem {
         return retVal;
     }
 
-    public boolean deleteDirEntry(DirectoryEntry dirEntry) throws IOException {
+    public void deleteDirEntry(DirectoryEntry dirEntry) throws IOException {
+        /*if (dirEntry.getFileType() == DirectoryEntry.DIRECTORY) {
+         List<DirectoryEntry> list = readDirEntry(dirEntry.getClusterHead());
+         if (!list.isEmpty()) {
+         System.err.println("Directory is not empty");
+         return false;
+         }
+         }
+         root.seek(dirEntry.getCurrentFilePosition());
+         root.write((char) 0);*/
+        //if (dirEntry.getFileType() == DirectoryEntry.FILE) {
+        root.seek(dirEntry.getCurrentFilePosition());
+        root.write(0);
+        char nextCluster = getNextClusterPosition(dirEntry.getClusterHead());
+        while (nextCluster != EOF) {
+            char tmpNext = getNextClusterPosition(nextCluster);
+            root.seek(FAT_REGION_START + ((int) nextCluster * FAT_ENTRY_SIZE));
+            root.write((char) 0);
+            nextCluster = tmpNext;
+        }
+        //}
+        root.seek(FAT_REGION_START + ((int) dirEntry.getClusterHead() * FAT_ENTRY_SIZE));
+        root.write((char) 0);
+    }
+
+    public void deleteOnlyDirEntry(DirectoryEntry dirEntry) throws IOException {
         if (dirEntry.getFileType() == DirectoryEntry.DIRECTORY) {
             List<DirectoryEntry> list = readDirEntry(dirEntry.getClusterHead());
             if (!list.isEmpty()) {
                 System.err.println("Directory is not empty");
-                return false;
+                return;
             }
         }
         root.seek(dirEntry.getCurrentFilePosition());
-        root.write((char) 0);
-        if (dirEntry.getFileType() == DirectoryEntry.FILE) {
-            char nextCluster = getNextClusterPosition(dirEntry.getClusterHead());
-            while (nextCluster != EOF) {
-                char tmpNext = getNextClusterPosition(nextCluster);
-                root.seek(FAT_REGION_START + ((int) nextCluster * FAT_ENTRY_SIZE));
-                root.write((char) 0);
-                nextCluster = tmpNext;
-            }
+        root.write(0);
+        char nextCluster = getNextClusterPosition(dirEntry.getClusterHead());
+        while (nextCluster != EOF) {
+            char tmpNext = getNextClusterPosition(nextCluster);
+            root.seek(FAT_REGION_START + ((int) nextCluster * FAT_ENTRY_SIZE));
+            root.write((char) 0);
+            nextCluster = tmpNext;
         }
-        root.seek(FAT_REGION_START + ((int) dirEntry.getClusterHead() * FAT_ENTRY_SIZE));
-        root.write((char) 0);
-
-        return true;
     }
 
     public int byteToInt(byte[] byteBarray) {
