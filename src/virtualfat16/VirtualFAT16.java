@@ -309,6 +309,9 @@ public class VirtualFAT16 {
                     }
                 }
                 if (tmpActual != null || movingToRoot) {
+                    if (tmpActual.getFileType() == DirectoryEntry.FILE){
+                        System.err.println(tmpActual.getFileName().trim() + " es un archivo. Utilice RM");
+                    }
                     FS.deleteOnlyDirEntry(tmpActual);
                 } 
             } catch (Exception ex) {
@@ -392,7 +395,12 @@ public class VirtualFAT16 {
 
                     }
                 }
+                
                 if (tmpActual != null || movingToRoot) {
+                    if (tmpActual.getFileType() == DirectoryEntry.DIRECTORY){
+                        System.err.println(tmpActual.getFileName().trim() + " es un directorio. Utilice RMDIR");
+                        return;
+                    }
                     FS.deleteDirEntry(tmpActual);//ese metodo ta malito
                 } else {
                     System.err.println("El directorio no existe");
