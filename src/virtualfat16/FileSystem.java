@@ -142,12 +142,12 @@ public class FileSystem {
         byte[] nextPosition = new byte[2];
         root.read(nextPosition);
         String decodedPosition = new String(nextPosition);
-        int nextCluster = (int) decodedPosition.charAt(0);
-        if (nextCluster == EOF) {
+        char nextCluster = decodedPosition.charAt(0);
+        if (nextCluster == EOF || nextCluster == 0) {
             //??????
             return EOF;
         }
-        return decodedPosition.charAt(0);
+        return nextCluster;
     }
 
     public List<DirectoryEntry> readDirEntry(char cluster) throws IOException {
@@ -356,7 +356,8 @@ public class FileSystem {
         }
         //}
         root.seek(FAT_REGION_START + ((int) dirEntry.getClusterHead() * FAT_ENTRY_SIZE));
-        root.write((char) 0);
+        byte[] zero = {0, 0};
+        root.write(zero);
     }
 
     public void deleteOnlyDirEntry(DirectoryEntry dirEntry) throws IOException {
@@ -368,7 +369,8 @@ public class FileSystem {
             }
         }
         root.seek(dirEntry.getCurrentFilePosition());
-        root.write(0);
+        byte[] zero = {0, 0};
+        root.write(zero);
         char nextCluster = getNextClusterPosition(dirEntry.getClusterHead());
         while (nextCluster != EOF) {
             char tmpNext = getNextClusterPosition(nextCluster);
