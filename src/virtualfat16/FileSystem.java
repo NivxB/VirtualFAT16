@@ -344,20 +344,20 @@ public class FileSystem {
          }
          root.seek(dirEntry.getCurrentFilePosition());
          root.write((char) 0);*/
-        //if (dirEntry.getFileType() == DirectoryEntry.FILE) {
-        root.seek(dirEntry.getCurrentFilePosition());
-        root.write(0);
-        char nextCluster = getNextClusterPosition(dirEntry.getClusterHead());
-        while (nextCluster != EOF) {
-            char tmpNext = getNextClusterPosition(nextCluster);
-            root.seek(FAT_REGION_START + ((int) nextCluster * FAT_ENTRY_SIZE));
-            root.write((char) 0);
-            nextCluster = tmpNext;
+        if (dirEntry.getFileType() == DirectoryEntry.FILE) {
+            root.seek(dirEntry.getCurrentFilePosition());
+            root.write(0);
+            char nextCluster = getNextClusterPosition(dirEntry.getClusterHead());
+            while (nextCluster != EOF) {
+                char tmpNext = getNextClusterPosition(nextCluster);
+                root.seek(FAT_REGION_START + ((int) nextCluster * FAT_ENTRY_SIZE));
+                root.write((char) 0);
+                nextCluster = tmpNext;
+            }
+            root.seek(FAT_REGION_START + ((int) dirEntry.getClusterHead() * FAT_ENTRY_SIZE));
+            byte[] zero = {0, 0};
+            root.write(zero);
         }
-        //}
-        root.seek(FAT_REGION_START + ((int) dirEntry.getClusterHead() * FAT_ENTRY_SIZE));
-        byte[] zero = {0, 0};
-        root.write(zero);
     }
 
     public void deleteOnlyDirEntry(DirectoryEntry dirEntry) throws IOException {

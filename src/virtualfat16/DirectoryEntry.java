@@ -124,4 +124,19 @@ public class DirectoryEntry {
     public char byteToChar(byte[] byteBarray) {
         return ByteBuffer.wrap(byteBarray).order(ByteOrder.BIG_ENDIAN).getChar();
     }
+    
+    public byte [] charToByteArray( char c )
+   {
+      byte [] twoBytes = { (byte)(c & 0xff), (byte)(c >> 8 & 0xff) };
+      return twoBytes;
+   }
+    
+    
+
+    @Override
+    public String toString() {
+        return "DirectoryEntry{" + "deleted=" + deleted + ", fileName=" + fileName + ", fileType=" + fileType + ", createdOn=" + createdOn + ", clusterHead=" + clusterHead + ", fileSize=" + fileSize + ", currentFilePosition=" + currentFilePosition + '}';
+    }
+    
+    
 }
