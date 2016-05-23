@@ -314,7 +314,7 @@ public class VirtualFAT16 {
                     if (tmpActual.getFileType() == DirectoryEntry.FILE){
                         System.err.println(tmpActual.getFileName().trim() + " es un archivo. Utilice RM");
                     }else{
-                        FS.deleteOnlyDirEntry(nextDir);
+                        FS.deleteOnlyDirEntry(tmpActual);
                         actualDirEntry=copia;
                     }
                 } 
@@ -404,7 +404,7 @@ public class VirtualFAT16 {
                     if (tmpActual.getFileType() == DirectoryEntry.DIRECTORY){
                         System.err.println(tmpActual.getFileName().trim() + " es un directorio. Utilice RMDIR");
                     }else{
-                        FS.deleteOnlyDirEntry(nextDir);
+                        FS.deleteOnlyDirEntry(tmpActual);
                         actualDirEntry=copia;
                     }
                 } 
