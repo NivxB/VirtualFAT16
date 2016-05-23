@@ -367,17 +367,18 @@ public class FileSystem {
                 System.err.println("Directory is not empty");
                 return;
             }
+            root.seek(dirEntry.getCurrentFilePosition());
+            byte[] zero = {0, 0};
+            root.write(zero);
+            char nextCluster = getNextClusterPosition(dirEntry.getClusterHead());
+            while (nextCluster != EOF) {
+                char tmpNext = getNextClusterPosition(nextCluster);
+                root.seek(FAT_REGION_START + ((int) nextCluster * FAT_ENTRY_SIZE));
+                root.write((char) 0);
+                nextCluster = tmpNext;
+            }
         }
-        root.seek(dirEntry.getCurrentFilePosition());
-        byte[] zero = {0, 0};
-        root.write(zero);
-        char nextCluster = getNextClusterPosition(dirEntry.getClusterHead());
-        while (nextCluster != EOF) {
-            char tmpNext = getNextClusterPosition(nextCluster);
-            root.seek(FAT_REGION_START + ((int) nextCluster * FAT_ENTRY_SIZE));
-            root.write((char) 0);
-            nextCluster = tmpNext;
-        }
+
     }
 
     public int byteToInt(byte[] byteBarray) {

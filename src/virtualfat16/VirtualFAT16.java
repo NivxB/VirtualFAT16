@@ -237,10 +237,12 @@ public class VirtualFAT16 {
         if (command.length == 2) {
             String[] path = command[1].split("/");
             try {
+                DirectoryEntry copia=actualDirEntry;
                 DirectoryEntry tmpActual = actualDirEntry;
                 String tmpStringActual = actualDir;
+                DirectoryEntry nextDir=FS.getDirectoryEntryPath(command[1]);;
                 if (command[1].charAt(0) == '/') {
-                    DirectoryEntry nextDir = FS.getDirectoryEntryPath(command[1]);
+                    nextDir = FS.getDirectoryEntryPath(command[1]);
                     if (nextDir != null) {
                         actualDir = command[1];
                         actualDirEntry = nextDir;
@@ -250,7 +252,7 @@ public class VirtualFAT16 {
 
                 for (int i = 0; i < path.length; i++) {
                     String movingToDirName = path[i];
-                    DirectoryEntry nextDir = null;
+                    nextDir = null;
                     List<DirectoryEntry> lista = null;
                     if (movingToDirName.trim().equals("..")) {
                         String checkVal = tmpStringActual;
@@ -311,8 +313,10 @@ public class VirtualFAT16 {
                 if (tmpActual != null || movingToRoot) {
                     if (tmpActual.getFileType() == DirectoryEntry.FILE){
                         System.err.println(tmpActual.getFileName().trim() + " es un archivo. Utilice RM");
+                    }else{
+                        FS.deleteOnlyDirEntry(nextDir);
+                        actualDirEntry=copia;
                     }
-                    FS.deleteOnlyDirEntry(tmpActual);
                 } 
             } catch (Exception ex) {
                 System.out.println(ex);
@@ -328,10 +332,12 @@ public class VirtualFAT16 {
         if (command.length == 2) {
             String[] path = command[1].split("/");
             try {
+                DirectoryEntry copia=actualDirEntry;
                 DirectoryEntry tmpActual = actualDirEntry;
                 String tmpStringActual = actualDir;
+                DirectoryEntry nextDir=FS.getDirectoryEntryPath(command[1]);;
                 if (command[1].charAt(0) == '/') {
-                    DirectoryEntry nextDir = FS.getDirectoryEntryPath(command[1]);
+                    nextDir = FS.getDirectoryEntryPath(command[1]);
                     if (nextDir != null) {
                         actualDir = command[1];
                         actualDirEntry = nextDir;
@@ -341,7 +347,7 @@ public class VirtualFAT16 {
 
                 for (int i = 0; i < path.length; i++) {
                     String movingToDirName = path[i];
-                    DirectoryEntry nextDir = null;
+                    nextDir = null;
                     List<DirectoryEntry> lista = null;
                     if (movingToDirName.trim().equals("..")) {
                         String checkVal = tmpStringActual;
@@ -390,22 +396,18 @@ public class VirtualFAT16 {
                         } else {
                             tmpStringActual += "/" + movingToDirName;
                         }
-
                         tmpActual = nextDir;
 
                     }
                 }
-                
                 if (tmpActual != null || movingToRoot) {
                     if (tmpActual.getFileType() == DirectoryEntry.DIRECTORY){
                         System.err.println(tmpActual.getFileName().trim() + " es un directorio. Utilice RMDIR");
-                        return;
+                    }else{
+                        FS.deleteOnlyDirEntry(nextDir);
+                        actualDirEntry=copia;
                     }
-                    FS.deleteDirEntry(tmpActual);//ese metodo ta malito
-                } else {
-                    System.err.println("El directorio no existe");
-                }
-
+                } 
             } catch (Exception ex) {
                 System.out.println(ex);
             }
