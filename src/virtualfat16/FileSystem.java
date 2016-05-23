@@ -39,7 +39,7 @@ public class FileSystem {
     public static final int COPY_FAT_REGION_START = FAT_REGION_START + FAT_TABLE_SIZE; //FAT_REGION + FAT_SIZE
     public static final int DATA_REGION_START = COPY_FAT_REGION_START + FAT_TABLE_SIZE;
 
-    public static final char EOF = 0x1;
+    public static final char EOF = 0xFFFF;
 
     public static RandomAccessFile root;
 
@@ -106,7 +106,7 @@ public class FileSystem {
             if (positionCheck == 0) {
                 root.seek(root.getFilePointer() - FAT_ENTRY_SIZE);
                 //retornamos los 2 bytes
-                root.writeChar(EOF);
+                root.write(EOF);
                 //vamos a enlazar chaval
                 // para que la fat anterior apunte a la siguiente fat
                 root.seek(FAT_REGION_START + (((int) previousCluster) * FAT_ENTRY_SIZE));
@@ -114,7 +114,7 @@ public class FileSystem {
                 //reservamos en primera FAT
                 root.seek(COPY_FAT_REGION_START + (i * FAT_ENTRY_SIZE));
                 //reservamos copy fat
-                root.writeChar(EOF);
+                root.write(EOF);
                 root.seek(COPY_FAT_REGION_START + (((int) previousCluster) * FAT_ENTRY_SIZE));
                 root.write(decodedPosition.charAt(0));
                 return (char) i;
@@ -184,8 +184,6 @@ public class FileSystem {
                     System.out.println(ex);
                 }
                 root.seek(initialPosition + ((i + 1) * DIR_ENTRY_SIZE));
-            } else {
-                break;
             }
         }
         return listEntry;
@@ -303,6 +301,8 @@ public class FileSystem {
             if (freeDirEntry == -1) {
                 return false;
             }
+           // System.out.println((int)myCluster + " parent Cluster");
+           // System.out.println((int)dirEntry.getClusterHead() + " chid cluster");
             root.seek(DATA_REGION_START + (((int) myCluster) * CLUSTER_SIZE) + (freeDirEntry * DIR_ENTRY_SIZE));
             root.write(dirEntry.getByteRepresentation());
         }
@@ -344,18 +344,23 @@ public class FileSystem {
          }
          root.seek(dirEntry.getCurrentFilePosition());
          root.write((char) 0);*/
+         byte[] zero = {0, 0};
         if (dirEntry.getFileType() == DirectoryEntry.FILE) {
             root.seek(dirEntry.getCurrentFilePosition());
+            root.write(0);
+            root.seek(DATA_REGION_START + ((int) dirEntry.getClusterHead() * CLUSTER_SIZE));
             root.write(0);
             char nextCluster = getNextClusterPosition(dirEntry.getClusterHead());
             while (nextCluster != EOF) {
                 char tmpNext = getNextClusterPosition(nextCluster);
                 root.seek(FAT_REGION_START + ((int) nextCluster * FAT_ENTRY_SIZE));
-                root.write((char) 0);
+                root.write(0);
+                root.seek(DATA_REGION_START + ((int) nextCluster * CLUSTER_SIZE));
+            root.write(0);
                 nextCluster = tmpNext;
             }
+          //  System.out.println("deleting FAT " + (int) dirEntry.getClusterHead());
             root.seek(FAT_REGION_START + ((int) dirEntry.getClusterHead() * FAT_ENTRY_SIZE));
-            byte[] zero = {0, 0};
             root.write(zero);
         }
     }
@@ -370,6 +375,8 @@ public class FileSystem {
             root.seek(dirEntry.getCurrentFilePosition());
             byte[] zero = {0, 0};
             root.write(zero);
+            root.seek(DATA_REGION_START + ((int) dirEntry.getClusterHead() * CLUSTER_SIZE));
+            root.write(0);
         }
 
     }
